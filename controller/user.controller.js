@@ -1,11 +1,13 @@
 import fs, { readFileSync } from "fs";
 const filePath = "./database/users.json";
-import {addUserSchema} from "../Validators/userValidators.js"
+import { addUserSchema , loginSchema} from "../Validators/userValidators.js";
+import bcrypt from "bcrypt";
+import { readFile,  userExists } from "../helpers/file.js";
 
 export const getUsers = async (req, res) => {
   try {
     if (fs.existsSync(filePath)) {
-      const users = JSON.parse(readFileSync(filePath, "utf-8"));
+      const users = readFile(filePath);
       if (users.length > 0) {
         res.json(users);
       } else {
@@ -21,10 +23,8 @@ export const getUsers = async (req, res) => {
 export const getUserByEmail = async (req, res) => {
   try {
     const { email } = req.params;
-    const users = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-    const userExists = users.find((user) =>
-      user.email === email ? user : false,
-    );
+    const users = readFile(filePath);
+    const userExists = userExists(filePath, email);
     if (userExists) {
       return res.status(200).json(userExists);
     }
@@ -34,16 +34,53 @@ export const getUserByEmail = async (req, res) => {
     res.status(500).json({ message: "Please try later!" });
   }
 };
-
-export const addUser = async (req, res) => {
+export const loginUser = async (req, res) => {
   try {
-    await addUserSchema.validate(req.body)
+    const { error } = loginSchema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res
+        .status(400)
+        .json({ message: "Email and password are required fields" });
+    }
+    const userExists = userExists(filePath, email);
+    if (!userExists) {
+      return res.status(404).json({ message: "User Not Found" });
+    }
+
+    const isPasswordCorrect = await bcrypt.compare(
+      password,
+      userExists.password,
+    );
+
+    if (!isPasswordCorrect) {
+      return res.status(401).json({ message: "Password Incorrect" });
+    }
+
+    return res.status(200).json({ message: "Login Successfull!", userExists });
+  } catch (error) {
+    console.log("An error occured : ", error);
+    res.status(500).json({ message: "Please try later!" });
+
+  }
+};
+export const signUp = async (req, res) => {
+  try {
+    const { error } = addUserSchema.validate(req.body);
+
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
     const { email, name, password } = req.body;
 
     if (!email || !name || !password) {
       return res.status(401).json({ message: "All fields are required" });
     }
-
 
     if (!fs.existsSync(filePath)) {
       fs.writeFileSync(filePath, "[]");
@@ -55,12 +92,18 @@ export const addUser = async (req, res) => {
     if (existingUser) {
       return res.status(409).json({ message: "user already exists" });
     }
+
+    const hashedPassword = bcrypt.hash(password, 10);
+    console.log("hashed" , hashedPassword);
+    
     const user = {
       id: crypto.randomUUID(),
       email,
       name,
-      password,
+      password: hashedPassword,
     };
+        console.log("user" , user);
+
     users.push(user);
 
     fs.writeFileSync(filePath, JSON.stringify(users));
