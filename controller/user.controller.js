@@ -108,10 +108,10 @@ export const signUp = async (req, res) => {
 
     fs.writeFileSync(filePath, JSON.stringify(users));
 
-    res.status(201).json({ message: "User created successfully" });
+    res.status(201).json({ message: "User created successfully!!!!" });
   } catch (error) {
     console.log("An error occured : ", error);
-    res.status(500).json({ message: "Please try later!" });
+    res.status(500).json({ message: "Please try later!!!!!" });
   }
 };
 
