@@ -1,12 +1,17 @@
 import fs, { readFileSync } from "fs";
 const filePath = "./database/users.json";
-import { addUserSchema , loginSchema} from "../Validators/userValidators.js";
+import { signUpSchema, loginSchema } from "../Validators/userValidators.js";
 import bcrypt from "bcrypt";
-import { readFile,  userExists } from "../helpers/file.js";
+import {
+  readFile,
+  findUserById,
+  checkIfFileExists,
+  findUserByEmail,
+} from "../helpers/file.js";
 
 export const getUsers = async (req, res) => {
   try {
-    if (fs.existsSync(filePath)) {
+    if (checkIfFileExists(filePath)) {
       const users = readFile(filePath);
       if (users.length > 0) {
         res.json(users);
@@ -20,15 +25,18 @@ export const getUsers = async (req, res) => {
   }
 };
 
-export const getUserByEmail = async (req, res) => {
+export const getUserById = async (req, res) => {
   try {
-    const { email } = req.params;
-    const users = readFile(filePath);
-    const userExists = userExists(filePath, email);
-    if (userExists) {
-      return res.status(200).json(userExists);
+    if (checkIfFileExists(filePath)) {
+      const { id } = req.params;
+      const users = readFile(filePath);
+      const user = findUserById(filePath, id);
+      if (user) {
+        return res.status(200).json(user);
+      }
+      return res.status(404).json({ message: "User not found" });
     }
-    return res.status(404).json({ message: "User not found" });
+    return res.status(404).json({ message: "File Doesn't exist" });
   } catch (error) {
     console.log("An error occured : ", error);
     res.status(500).json({ message: "Please try later!" });
@@ -36,79 +44,71 @@ export const getUserByEmail = async (req, res) => {
 };
 export const loginUser = async (req, res) => {
   try {
-    const { error } = loginSchema.validate(req.body);
+    // const { error } = loginSchema.validate(req.body);
 
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
+    // if (error) {
+    //   return res.status(400).json({ message: error.details[0].message });
+    // }
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required fields" });
-    }
-    const userExists = userExists(filePath, email);
-    if (!userExists) {
+    const user = await findUserByEmail(filePath, email);
+    if (!user) {
       return res.status(404).json({ message: "User Not Found" });
     }
+    console.log("user at login", user);
 
-    const isPasswordCorrect = await bcrypt.compare(
-      password,
-      userExists.password,
-    );
+    const isPasswordCorrect = await bcrypt.compare(password, user.password);
 
     if (!isPasswordCorrect) {
       return res.status(401).json({ message: "Password Incorrect" });
     }
-
-    return res.status(200).json({ message: "Login Successfull!", userExists });
+    res.cookie("userId", user.id);
+    return res.status(200).json({ message: "Login Successfull!", user });
   } catch (error) {
     console.log("An error occured : ", error);
     res.status(500).json({ message: "Please try later!" });
-
   }
 };
 export const signUp = async (req, res) => {
   try {
-    const { error } = addUserSchema.validate(req.body);
+    // const { error } = signUpSchema.validate(req.body);
 
-    if (error) {
-      return res.status(400).json({ message: error.details[0].message });
-    }
+    // if (error) {
+    //   return res.status(400).json({ message: error.details[0].message });
+    // }
     const { email, name, password } = req.body;
-
-    if (!email || !name || !password) {
-      return res.status(401).json({ message: "All fields are required" });
-    }
 
     if (!fs.existsSync(filePath)) {
       fs.writeFileSync(filePath, "[]");
+    } else {
+      const users = readFile(filePath);
+      if (!users) {
+        fs.writeFileSync(filePath, "[]");
+        return;
+      }
+      const existingUser = findUserByEmail(filePath, email);
+
+      if (existingUser) {
+        return res.status(409).json({ message: "user already exists" });
+      }
+
+      const hashedPassword = await bcrypt.hash(password, 10);
+      console.log("hashed", hashedPassword);
+
+      const user = {
+        id: crypto.randomUUID(),
+        email,
+        name,
+        password: hashedPassword,
+      };
+      console.log("user", user);
+
+      users.push(user);
+
+      fs.writeFileSync(filePath, JSON.stringify(users));
+
+      res.status(201).json({ message: "User created successfully!!!!" });
     }
-
-    const users = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-    const existingUser = users.find((user) => user.email === email);
-
-    if (existingUser) {
-      return res.status(409).json({ message: "user already exists" });
-    }
-
-    const hashedPassword = bcrypt.hash(password, 10);
-    console.log("hashed" , hashedPassword);
-    
-    const user = {
-      id: crypto.randomUUID(),
-      email,
-      name,
-      password: hashedPassword,
-    };
-        console.log("user" , user);
-
-    users.push(user);
-
-    fs.writeFileSync(filePath, JSON.stringify(users));
-
-    res.status(201).json({ message: "User created successfully!!!!" });
   } catch (error) {
     console.log("An error occured : ", error);
     res.status(500).json({ message: "Please try later!!!!!" });
@@ -117,22 +117,59 @@ export const signUp = async (req, res) => {
 
 export const editUser = async (req, res) => {
   try {
-    const { email } = req.params;
+    const { userId: id } = req.cookies;
     const user = req.body;
 
-    if (!fs.existsSync(filePath)) {
-      return res.json({ message: "File not found" });
+    if (Object.keys(user).length === 0) {
+      return res.status(400).json({ message: "User can't be empty" });
     }
 
-    const users = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-    const userExists = users.findIndex((user) => user.email === email);
-    if (userExists === -1) {
+    if (!checkIfFileExists(filePath))
+      return res.status(404).json("File Not Found");
+
+    const { error } = signUpSchema.validate(user);
+
+    if (error) {
+      return res.status(400).json({ message: error.details[0].message });
+    }
+
+    const users = readFile(filePath);
+    const userPresent = findUserById(filePath, id);
+
+    if (!userPresent) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    users[userExists] = user;
+    const updatedUsers = users.map((u) => (u.id === id ? { id, ...user } : u));
 
-    fs.writeFileSync(filePath, JSON.stringify(users));
+    fs.writeFileSync(filePath, JSON.stringify(updatedUsers));
+
+    res.status(200).json({ message: "User updated successfully" });
+  } catch (error) {
+    console.log("An error occured : ", error);
+    res.status(500).json({ message: "Please try later!" });
+  }
+};
+export const patchUser = async (req, res) => {
+  try {
+    const { userId: id } = req.cookies;
+    const incomingUser = req.body;
+
+    if (!checkIfFileExists(filePath))
+      return res.status(404).json({ message: "File not found" });
+
+    const userExists = findUserById(filePath, id);
+
+    if (!userExists) {
+      return res.status(404).json({ message: "user Not found" });
+    }
+
+    const users = readFile(filePath);
+    const updatedUser = users.map((u) =>
+      u.id === id ? { ...u, ...incomingUser } : u,
+    );
+
+    fs.writeFileSync(filePath, JSON.stringify(updatedUser));
 
     res.status(200).json({ message: "User updated successfully" });
   } catch (error) {
@@ -143,22 +180,37 @@ export const editUser = async (req, res) => {
 
 export const deleteUser = async (req, res) => {
   try {
-    const { email } = req.params;
+    const { userId: id } = req.cookies;
+    console.log(id, "id");                                                                                                                                                                                                                                                                                                                                                              
 
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({ message: "Not found" });
+    if (!id) {
+      return res.json({ message: "Id Not found" });
     }
-    const users = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-    const userExists = users.findIndex((user) => user.email === email);
-    if (userExists === -1) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
-    users.splice(userExists, 1);
+    if (checkIfFileExists(filePath)) {
+      const users = readFile(filePath);
+      const user = findUserById(filePath, id);
+      if (!user) {
+        return res.status(404).json({
+          message: "User not found",
+        });
+      }
+      // users.splice(user, 1);
+      const updatedUsers = users.filter((user) => user.id !== id);
 
-    fs.writeFileSync(filePath, JSON.stringify(users));
-    res.status(200).json({ message: "user deleted successfully" });
+      fs.writeFileSync(filePath, JSON.stringify(updatedUsers));
+      res.status(200).json({ message: "user deleted successfully" });
+    }
+    return res.status(404).json({ message: "File Not found" });
+  } catch (error) {
+    console.log("An error occured : ", error);
+    res.status(500).json({ message: "Please try later!" });
+  }
+};
+
+export const logoutUser = async (req, res) => {
+  try {
+    res.clearCookie("userId");
+    return res.json({ message: "logged out" });
   } catch (error) {
     console.log("An error occured : ", error);
     res.status(500).json({ message: "Please try later!" });

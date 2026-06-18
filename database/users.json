@@ -1,42 +1,25 @@
 [
   {
-    "id": "2ccdff30-27ff-4fdb-b35b-d9c8dc7d8752",
-    "email": "shaina1234354@gmail.com",
-    "name": "shyna",
-    "password": "1234"
+    "id": "daad58af-2012-4860-bfbe-6b60c747632c",
+    "email": "apple@gmail.com",
+    "name": "Apple Mango",
+    "password": "$2b$10$HoLTvEblS..7hIVNahsPNOvOUPF9vZDApphTouMlK95cssrDZe4eO"
   },
   {
-    "id": "9f387814-587f-4137-b22c-1861f1f35749",
-    "email": "a@gmail.com",
-    "name": "a",
-    "password": "1234"
-  },
-  {
-    "id": "f4c8a775-d9f2-4c26-a31e-48ccd95c07fb",
-    "email": "b@gmail.com",
-    "name": "b",
-    "password": "1234"
-  },
-  {
-    "id": "e8d81228-9997-43b0-a06d-c058f9776579",
-    "email": "shaina@gmail.com",
-    "name": "Shain",
-    "password": 123
-  },
-  {
-    "id": "7dbec395-3e02-4115-91bd-279b0d0dcc82",
-    "email": "shainda@gmail.com",
-    "name": "Shain"
-  },
-  {
-    "id": "c6dac416-54c3-4c20-8212-4eef7876bd8a",
-    "email": "s",
-    "name": "Shain"
-  },
-  {
-    "id": "cff7e3dc-3953-41da-9c7b-1ada69f55a47",
     "email": "vishesh@gmail.com",
-    "name": "vishesh",
-    "password": {}
+    "name": "changes using id ",
+    "password": "@Vishesh123"
+  },
+  {
+    "id": "f9d07f1d-bb11-4f74-bba0-771fa0da88ca",
+    "email": "vishesh@gmail.com",
+    "name": "Vishesh",
+    "password": "$2b$10$R0J9aH/QxNEfLYQFyjA64eqEFy866kMu9okZZQSErD.2.53aP9dkS"
+  },
+  {
+    "id": "5c7f3ed2-0d1e-4688-919e-d033ada4e252",
+    "email": "abcd@gmail.com",
+    "name": "abcd",
+    "password": "$2b$10$0J1PhqWpOhSeIF4KYWMccue0HUYahNTjPC6p7sOYXutDPP5qL8dja"
   }
 ]
