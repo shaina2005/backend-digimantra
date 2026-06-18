@@ -42,6 +42,7 @@ export const getUserById = async (req, res) => {
     res.status(500).json({ message: "Please try later!" });
   }
 };
+
 export const loginUser = async (req, res) => {
   try {
     // const { error } = loginSchema.validate(req.body);
@@ -69,6 +70,7 @@ export const loginUser = async (req, res) => {
     res.status(500).json({ message: "Please try later!" });
   }
 };
+
 export const signUp = async (req, res) => {
   try {
     // const { error } = signUpSchema.validate(req.body);
