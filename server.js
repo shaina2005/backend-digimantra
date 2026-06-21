@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import { auth } from "./middleware/auth.middleware.js";
 import {connectDatabase} from "./database/database.js";
+import loginRoutes from "./routes/login.routes.js";
 dotenv.config();
 const PORT = process.env.PORT;
 
@@ -21,6 +22,7 @@ app.use((req, res, next) => {
 });
 
 app.use("/auth", authRoutes);
+app.use("/login" , loginRoutes)
 app.use("/user", auth, userRoutes);
 
 app.listen(PORT, () => {

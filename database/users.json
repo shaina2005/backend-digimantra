@@ -21,5 +21,11 @@
     "email": "abcd@gmail.com",
     "name": "abcd",
     "password": "$2b$10$0J1PhqWpOhSeIF4KYWMccue0HUYahNTjPC6p7sOYXutDPP5qL8dja"
+  },
+  {
+    "id": "5e80682c-9c41-443d-b89f-f90e2ff00bc8",
+    "email": "suhani@gmail.com",
+    "name": "suhani",
+    "password": "$argon2id$v=19$m=65536,t=3,p=4$2QqovtkX1vHiaSm392yS9w$cWlp0Y3wSxJ4JSlTvTdVKOEq0LW6XeBGmc8zYYTM6nk"
   }
 ]
