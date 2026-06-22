@@ -4,7 +4,7 @@ import authRoutes from "./routes/auth.routes.js";
 import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import { auth } from "./middleware/auth.middleware.js";
-import {connectDatabase} from "./database/database.js";
+import { connectDatabase } from "./database/database.js";
 dotenv.config();
 const PORT = process.env.PORT;
 

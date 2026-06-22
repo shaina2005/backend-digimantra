@@ -1,7 +1,8 @@
 import { ROLES } from "../enum/enum.js";
 import { response } from "../helpers/response.js";
-import bcrypt from "bcrypt";
-
+// import bcrypt from "bcrypt";
+import argon2 from "argon2";
+import jwt from "jsonwebtoken";
 import user from "../model/user.model.js";
 
 export const signUp = async (req, res) => {
@@ -11,7 +12,8 @@ export const signUp = async (req, res) => {
     if (isUserExists) {
       return response(res, false, 409, null, "User already exists");
     }
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await argon2.hash(password);
     const newUser = {
       email,
       firstName,
@@ -41,6 +43,8 @@ export const signUp = async (req, res) => {
 
 export const loginUser = async (req, res) => {
   try {
+    console.log("req.body", req.body);
+
     const { email, password } = req.body;
     const userExists = await user.findOne({ email });
     if (!userExists) {
@@ -52,13 +56,20 @@ export const loginUser = async (req, res) => {
         "User doesn't exists. Please signup first",
       );
     }
+    // const isUserValid = await bcrypt.compare(password, userExists.password);
+    const isUserValid = await argon2.verify(userExists.password, password);
 
-    const isUserValid = await bcrypt.compare(password, userExists.password);
-    
     if (!isUserValid) {
       return response(res, false, 401, null, "Incorrect password");
     }
-    res.cookie("userId", userExists._id);
+    const payload = {userId : userExists._id , role : userExists.role}
+    const token = jwt.sign(payload , process.env.MySECRET, {
+      expiresIn: "1h",
+    });
+    res.cookie("token", token, {
+      httpOnly: true,
+      maxAge: 60 * 60 * 1000,
+    });
     return response(res, true, 200, null, "Login successfull");
   } catch (error) {
     console.log("Error occured in loginuser controller : ", error);
