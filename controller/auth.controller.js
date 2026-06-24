@@ -13,12 +13,13 @@ export const signUp = async (req, res) => {
       return response(res, false, 409, null, "User already exists");
     }
     // const hashedPassword = await bcrypt.hash(password, 10);
-    const hashedPassword = await argon2.hash(password);
+    // const hashedPassword = await argon2.hash(password);
     const newUser = {
       email,
       firstName,
       lastName,
-      password: hashedPassword,
+      // password: hashedPassword,
+      password,
       role: ROLES.USER,
     };
 

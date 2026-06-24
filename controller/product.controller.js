@@ -22,11 +22,20 @@ export const getAllproducts = async (_, res) => {
 };
 
 export const addNewProduct = async (req, res) => {
+  console.log("reached");
+  
   try {
     const incomingProduct = req.body;
+    const prefix = incomingProduct.name.replace(/[^a-zA-Z]/g , "").substring(0,3).toUpperCase();
+    const randomNo = Math.floor(100000 + Math.random()* 900000);
+    const productCode = `${prefix}-${randomNo}`
     const newProduct = await product.create({
+      productCode,
       ...incomingProduct,
+      addedBy :req.user.userId,
     });
+    console.log(newProduct);
+    
     return response(res, true, 201, newProduct, "Product Added successfully");
   } catch (error) {
     console.log("Error occured in AddnewProduct controller : ", error);
@@ -46,7 +55,11 @@ export const getProductById = async (req, res) => {
     if (!id) {
       return response(res, false, 409, null, "Product Not found");
     }
-    // const p
+    const productExists = await product.findById(id);
+    if (!productExists) {
+      return response(res, false, true, null, "product not found");
+    }
+    return response(res , true , 200 , {product : productExists} , "product fetched Successfully")
   } catch (error) {
     console.log("Error occured in AddnewProduct controller : ", error);
     return response(

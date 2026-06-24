@@ -1,8 +1,12 @@
-import { required } from "joi";
 import mongoose from "mongoose";
 
 const productSchema = new mongoose.Schema(
   {
+    productCode: {
+      type: String,
+      required: true,
+      unique: true,
+    },
     name: {
       type: String,
       required: [true, "Prouduct name is required"],
@@ -18,6 +22,11 @@ const productSchema = new mongoose.Schema(
     image: {
       type: "String",
       required: [true, "Product Image is required"],
+    },
+    addedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "user",
+      required: true,
     },
   },
   { timestamps: true },
