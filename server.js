@@ -24,7 +24,6 @@ app.use((req, res, next) => {
 });
 
 app.use("/auth", authRoutes);
-app.use("/login" , loginRoutes)
 app.use("/user", auth, userRoutes);
 app.use("/product", auth, productRoutes);
 
