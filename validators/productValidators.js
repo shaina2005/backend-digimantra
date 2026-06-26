@@ -1,35 +1,33 @@
 import Joi from "joi";
 
-export const addProductSchema = Joi.object({
-  name: Joi.string()
-    .trim()
-    .required().min(3)
-    .messages({
+export const addProductSchema = Joi.object(
+  {
+    name: Joi.string().trim().required().min(3).max(150).messages({
       "string.empty": "Product name is required",
       "any.required": "Product name is required",
     }),
 
-  price: Joi.number()
-    .min(1)
-    .required()
-    .messages({
+    price: Joi.number().min(1).positive().precision(2).required().messages({
       "number.base": "Price must be a number",
       "number.min": "Price must be greater than 0",
       "any.required": "Price is required",
     }),
 
-  description: Joi.string()
-    .trim()
-    .required()
-    .messages({
+    description: Joi.string().trim().required().min(20).max(1000).messages({
       "string.empty": "Description is required",
       "any.required": "Description is required",
     }),
 
-  image: Joi.string()
-    .required()
-    .messages({
+    image: Joi.string().uri().required().messages({
       "string.empty": "Image is required",
       "any.required": "Image is required",
     }),
-});
+    stock: Joi.number().integer().required().min(0).messages({
+      "number.empty": "Stock can't be empty",
+      "any.required": "Stock is required",
+    }),
+  }
+).options({
+    abortEarly: false,
+    allowUnknown: false,
+  });

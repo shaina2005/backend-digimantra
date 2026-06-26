@@ -30,17 +30,10 @@ export const loginSchema = Joi.object({
   email: Joi.string().email().required().messages({
     "any.required": "email is required",
     "string.empty": "email can't be empty",
+    "string.email": "please enter a valid email",
   }),
-  password: Joi.string()
-    .min(8)
-    .pattern(
-      new RegExp(
-        "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{8,}$",
-      ),
-    )
-    .required()
-    .messages({
-      "any.required": "Password is required.",
-      "string.empty": "password can't be empty",
-    }),
+  password: Joi.string().min(8).required().messages({
+    "any.required": "Password is required.",
+    "string.empty": "password can't be empty",
+  }),
 });

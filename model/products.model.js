@@ -20,8 +20,12 @@ const productSchema = new mongoose.Schema(
       required: [true, "Description must be provided"],
     },
     image: {
-      type: "String",
+      type: String,
       required: [true, "Product Image is required"],
+    },
+    stock:{
+      type : Number,
+      required :[true , "Stock is required"]
     },
     addedBy: {
       type: mongoose.Schema.Types.ObjectId,

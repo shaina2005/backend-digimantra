@@ -81,6 +81,32 @@ export const getProductById = async (req, res) => {
   }
 };
 
+export const editProduct = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const incomingProduct = req.body;
+    if (!id) {
+      return response(res, false, 404, null, "Product not found");
+    }
+    const productInDB = await product.findById(id);
+    console.log("productInDb", productInDB);
+
+    if (!productInDB) {
+      return response(res, false, 404, null, "Product not found");
+    }
+    // const updatedProduct = await product.findByIdAndUpdate({});
+  } catch (error) {
+    console.log("Error occured in AddnewProduct controller : ", error);
+    return response(
+      res,
+      false,
+      500,
+      null,
+      "Server Error. Please try again later",
+    );
+  }
+};
+
 export const getProductByCode = async (req, res) => {
   try {
     const { productcode } = req.params;
@@ -110,6 +136,54 @@ export const getProductByCode = async (req, res) => {
   }
 };
 
+export const updateStock = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { quantity } = req.body;
+    if (!id) {
+      return response(res, false, 404, null, "Product not found");
+    }
+    if (isNaN(quantity)) {
+      return response(res, false, 400, null, "Quantity must be integer");
+    }
+    const oldStock = await product.findById(id);
+    if(!oldStock){
+      return response(res , false , 404 , null , "Product can't be found")
+    }
+    if(oldStock.stock + Number(quantity) < 0){
+      return response(res , false , 400 , null , "Insufficient stock")
+    }
+    const updateStock = await product.findByIdAndUpdate(
+      id,
+      {
+        $inc: {
+          stock: Number(quantity),
+        },
+      },
+      { new: true },
+    );
+    if (!updateStock) {
+      return response(res, false, 400, null, "Failed adding new stock");
+    }
+    return response(
+      res,
+      true,
+      200,
+      { product: updateStock },
+      "Stock update successfully",
+    );
+  } catch (error) {
+    console.log("Error occured in updateStock controller : ", error);
+    return response(
+      res,
+      false,
+      500,
+      null,
+      "Server Error. Please try again later",
+    );
+  }
+};
+
 export const updateProductById = async (req, res) => {
   try {
     const { id } = req.params;
@@ -117,7 +191,9 @@ export const updateProductById = async (req, res) => {
       return response(res, false, 409, null, "Product Not found");
     }
     const incomingProduct = req.body;
-    const updateProduct = await product.findByIdAndUpdate(id, incomingProduct, { new: true });
+    const updateProduct = await product.findByIdAndUpdate(id, incomingProduct, {
+      new: true,
+    });
     if (!updateProduct) {
       return response(res, false, 409, null, "Product Not found");
     }
@@ -146,7 +222,7 @@ export const deleteProductById = async (req, res) => {
     if (!id) {
       return response(res, false, 409, null, "Product Not found");
     }
-    const productDeleted = await  product.findByIdAndDelete(id);
+    const productDeleted = await product.findByIdAndDelete(id);
     if (!productDeleted) {
       return response(res, false, 409, null, "Product Not found");
     }

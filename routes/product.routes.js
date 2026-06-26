@@ -4,8 +4,10 @@ import {
   getAllproducts,
   getProductByCode,
   getProductById,
+  editProduct,
   updateProductById,
-  deleteProductById
+  deleteProductById,
+  updateStock
 } from "../controller/product.controller.js";
 import { schemaValidator } from "../middleware/schemaValidator.middleware.js";
 import { addProductSchema } from "../validators/productValidators.js";
@@ -22,6 +24,13 @@ router.post(
   schemaValidator(addProductSchema),
   addNewProduct,
 );
+router.put(
+  "/:id",
+  allowedAccess("superadmin"),
+  schemaValidator(addProductSchema),
+  editProduct,
+);
+router.patch("/update/stock/:id" , allowedAccess("superadmin"), updateStock )
 router.patch("/update/:id" , allowedAccess("superadmin"), updateProductById);
 router.delete("/delete/:id", allowedAccess("superadmin"), deleteProductById);
 export default router;
