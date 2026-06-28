@@ -31,7 +31,10 @@ export const addItemToCart = async (req, res) => {
   try {
     const { userId } = req.user;
     const { productId, quantity: qty } = req.body;
-    const quantity = Number(qty);
+    let quantity = Number(qty);
+    if(Number.isNaN(quantity) || quantity <= 0){
+      return response(res, false, 400, null, "Invalid quantity provided");
+    }
 
     const productExistsInDataBase = await product.findById(productId);
     if (!productExistsInDataBase) {
@@ -154,9 +157,7 @@ export const updateCartItemQuantity = async (req, res) => {
         null,
         "Requested quantity is more than available stock",
       );
-    } else if (quantity < 0) {
-      return response(res, false, 400, null, "Requested quantity is invalid");
-    } else if (quantity == 0) {
+    }  else if (quantity == 0) {
       const deleteProductFromCart = userCart.items.filter(
         (item) => !item.productId.equals(productId),
       );
