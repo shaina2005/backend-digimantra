@@ -32,7 +32,7 @@ export const loginSchema = Joi.object({
     "string.empty": "email can't be empty",
     "string.email": "please enter a valid email",
   }),
-  password: Joi.string().min(8).required().messages({
+  password: Joi.string().required().messages({
     "any.required": "Password is required.",
     "string.empty": "password can't be empty",
   }),

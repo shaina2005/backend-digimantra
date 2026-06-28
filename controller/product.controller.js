@@ -8,7 +8,7 @@ export const getAllproducts = async (_, res) => {
       return response(res, true, 200, [], "No products Found");
     }
 
-    return response(res, true, 200, products, "Products fetched successfully");
+    return response(res, true, 200, {products}, "Products fetched successfully");
   } catch (error) {
     console.log("Error occured in getAllProducts controller : ", error);
     return response(

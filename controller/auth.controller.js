@@ -63,7 +63,7 @@ export const loginUser = async (req, res) => {
     if (!isUserValid) {
       return response(res, false, 401, null, "Incorrect password");
     }
-    const payload = {userId : userExists._id , role : userExists.role}
+    const payload = {userId : userExists._id , role : userExists.role , name : userExists.firstname}
     const token = jwt.sign(payload , process.env.MySECRET, {
       expiresIn: "1h",
     });
@@ -71,6 +71,7 @@ export const loginUser = async (req, res) => {
       httpOnly: true,
       maxAge: 60 * 60 * 1000,
     });
+    console.log("@cookie sent ", token);
     return response(res, true, 200, null, "Login successfull");
   } catch (error) {
     console.log("Error occured in loginuser controller : ", error);
