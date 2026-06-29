@@ -8,7 +8,13 @@ export const getAllproducts = async (_, res) => {
       return response(res, true, 200, [], "No products Found");
     }
 
-    return response(res, true, 200, {products}, "Products fetched successfully");
+    return response(
+      res,
+      true,
+      200,
+      { products },
+      "Products fetched successfully",
+    );
   } catch (error) {
     console.log("Error occured in getAllProducts controller : ", error);
     return response(
@@ -22,10 +28,22 @@ export const getAllproducts = async (_, res) => {
 };
 
 export const addNewProduct = async (req, res) => {
-  console.log("reached");
-
   try {
     const incomingProduct = req.body;
+    console.log("reqfiles", req.files);
+    if (!req.files || req.files.length === 0) {
+      return response(res, false, 400, null, "Image file is required");
+    }
+    if (req.files.length > 5) {
+      return response(
+        res,
+        false,
+        400,
+        null,
+        "Maximum 5 images can be uploaded",
+      );
+    }
+    const image = req.files.map((file) => "/uploads/" + file.filename);
     const prefix = incomingProduct.name
       .replace(/[^a-zA-Z]/g, "")
       .substring(0, 3)
@@ -35,6 +53,7 @@ export const addNewProduct = async (req, res) => {
     const newProduct = await product.create({
       productCode,
       ...incomingProduct,
+      image,
       addedBy: req.user.userId,
     });
     console.log(newProduct);
@@ -147,11 +166,11 @@ export const updateStock = async (req, res) => {
       return response(res, false, 400, null, "Quantity must be integer");
     }
     const oldStock = await product.findById(id);
-    if(!oldStock){
-      return response(res , false , 404 , null , "Product can't be found")
+    if (!oldStock) {
+      return response(res, false, 404, null, "Product can't be found");
     }
-    if(oldStock.stock + Number(quantity) < 0){
-      return response(res , false , 400 , null , "Insufficient stock")
+    if (oldStock.stock + Number(quantity) < 0) {
+      return response(res, false, 400, null, "Insufficient stock");
     }
     const updateStock = await product.findByIdAndUpdate(
       id,

@@ -18,10 +18,10 @@ export const addProductSchema = Joi.object(
       "any.required": "Description is required",
     }),
 
-    image: Joi.string().uri().required().messages({
-      "string.empty": "Image is required",
-      "any.required": "Image is required",
-    }),
+    // image: Joi.string().required().messages({
+    //   "string.empty": "Image is required",
+    //   "any.required": "Image is required",
+    // }),
     stock: Joi.number().integer().required().min(0).messages({
       "number.empty": "Stock can't be empty",
       "any.required": "Stock is required",

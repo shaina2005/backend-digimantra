@@ -12,15 +12,17 @@ import {
 import { schemaValidator } from "../middleware/schemaValidator.middleware.js";
 import { addProductSchema } from "../validators/productValidators.js";
 import { allowedAccess } from "../middleware/auth.middleware.js";
+import upload from "../middleware/multer.middleware.js";
 
 const router = express.Router();
 
 router.get("/", getAllproducts);
 router.get("/:id", getProductById);
-router.get("/code/:productcode" , allowedAccess("superadmin") , getProductByCode);
+router.get("/code/:productcode" , allowedAccess("superadmin") ,  getProductByCode);
 router.post(
   "/",
   allowedAccess("superadmin"),
+  upload.array('image' , 5),
   schemaValidator(addProductSchema),
   addNewProduct,
 );

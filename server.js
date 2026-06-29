@@ -8,6 +8,7 @@ import { auth } from "./middleware/auth.middleware.js";
 import { connectDatabase } from "./database/database.js";
 import { generateSuperAdmin } from "./helpers/superAdmin.js";
 import cartRoutes from "./routes/cart.routes.js";
+import { errorBoundry } from "./middleware/error.middleware.js";
 dotenv.config();
 const PORT = process.env.PORT;
 
@@ -27,8 +28,8 @@ app.use((req, res, next) => {
 app.use("/auth", authRoutes);
 app.use("/user", auth, userRoutes);
 app.use("/product", auth, productRoutes);
-app.use("/cart" , auth , cartRoutes);
-
+app.use("/cart", auth, cartRoutes);
+app.use(errorBoundry);
 app.listen(PORT, () => {
   console.log("Server started on port: ", PORT);
 });

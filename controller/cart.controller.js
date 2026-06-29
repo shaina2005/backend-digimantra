@@ -167,7 +167,7 @@ export const updateCartItemQuantity = async (req, res) => {
         if (!deleteCart) {
           return response(res, false, 500, null, "Deletion of cart failed");
         }
-        return response(res, true, 200, null, "CArt delted due to no items");
+        return response(res, true, 200, null, "Cart delted due to no items");
       }
       await userCart.save();
       return response(

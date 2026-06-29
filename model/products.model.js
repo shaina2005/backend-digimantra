@@ -20,7 +20,7 @@ const productSchema = new mongoose.Schema(
       required: [true, "Description must be provided"],
     },
     image: {
-      type: String,
+      type: [String],
       required: [true, "Product Image is required"],
     },
     stock:{
