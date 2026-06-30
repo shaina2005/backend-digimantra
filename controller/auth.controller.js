@@ -4,6 +4,7 @@ import { response } from "../helpers/response.js";
 import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import user from "../model/user.model.js";
+import otp from "../model/otp.model.js";
 
 export const signUp = async (req, res) => {
   try {
@@ -24,10 +25,16 @@ export const signUp = async (req, res) => {
     };
 
     const userCreated = await user.create(newUser);
-
-    if (userCreated) {
-      return response(res, true, 201, userCreated, "User created successfully");
-    }
+    // if (userCreated) {
+    //   return response(res, true, 201, userCreated, "User created successfully");
+    // }
+    const oneTimePassword = Math.floor(100000 + Math.random() * 900000);
+    const expiresIn = new Date(Date.now() + 5 * 60 * 1000);
+    await otp.create({
+      userId: userCreated._id,
+      otp: oneTimePassword,
+      expiresIn,
+    });
 
     return response(false, 409, null, "User creation failed. Try again later");
   } catch (error) {
@@ -63,8 +70,12 @@ export const loginUser = async (req, res) => {
     if (!isUserValid) {
       return response(res, false, 401, null, "Incorrect password");
     }
-    const payload = {userId : userExists._id , role : userExists.role , name : userExists.firstname}
-    const token = jwt.sign(payload , process.env.MySECRET, {
+    const payload = {
+      userId: userExists._id,
+      role: userExists.role,
+      name: userExists.firstname,
+    };
+    const token = jwt.sign(payload, process.env.MySECRET, {
       expiresIn: "1h",
     });
     res.cookie("token", token, {
