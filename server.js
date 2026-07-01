@@ -1,8 +1,8 @@
+import dotenv from "dotenv";
 import express from "express";
 import userRoutes from "./routes/user.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import productRoutes from "./routes/product.routes.js";
-import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import { auth } from "./middleware/auth.middleware.js";
 import { connectDatabase } from "./database/database.js";
@@ -10,6 +10,7 @@ import { generateSuperAdmin } from "./helpers/superAdmin.js";
 import cartRoutes from "./routes/cart.routes.js";
 import { errorBoundry } from "./middleware/error.middleware.js";
 dotenv.config();
+console.log(Object.keys(process.env).filter(key => key.includes("EMAIL")));
 const PORT = process.env.PORT;
 
 const app = express();
