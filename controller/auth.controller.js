@@ -6,12 +6,13 @@ import jwt from "jsonwebtoken";
 import user from "../model/user.model.js";
 import otp from "../model/otp.model.js";
 import { sendOtpMail } from "../helpers/sendMail.js";
+import { generateAndSendOtp } from "../helpers/generateAndSendOtp.js";
 
 export const signUp = async (req, res) => {
   try {
     const { email, firstName, lastName, password } = req.body;
-    const isUserExists = await user.findOne({ email });
-    if (isUserExists) {
+    const isUserExists = await user.findOne({ email }).select("-password");
+    if (isUserExists && isUserExists?.isVerified) {
       return response(res, false, 409, null, "User already exists");
     }
     // const hashedPassword = await bcrypt.hash(password, 10);
@@ -25,19 +26,53 @@ export const signUp = async (req, res) => {
       role: ROLES.USER,
     };
 
+    if (isUserExists && !isUserExists.isVerified) {
+      const updateUnverifiedUser = await user
+        .findOneAndUpdate({ email }, { $set: newUser }, { new: true })
+        .select("-password");
+      if (!updateUnverifiedUser) {
+        return response(
+          res,
+          false,
+          500,
+          null,
+          "Failed creating account.Please try again.",
+        );
+      }
+      const otpCreated = generateAndSendOtp(email);
+      if (!otpCreated) {
+        await user.findOneAndDelete({ email });
+        return response(
+          res,
+          false,
+          500,
+          null,
+          "Failed creating account.Please try again.",
+        );
+      }
+      return response(
+        res,
+        true,
+        201,
+        { user: updateUnverifiedUser },
+        "Otp sent successfully",
+      );
+    }
     const userCreated = await user.create(newUser);
+    delete userCreated.password
     if (!userCreated) {
       return response(res, false, 500, null, "failed creating user");
     }
-    const otpToSend = Math.floor(100000 + Math.random() * 900000).toString();
-    await sendOtpMail(email , otpToSend)
-    const oneTimePassword = await argon2.hash(otpToSend);   
-    const expiresIn = new Date(Date.now() + 5 * 60 * 1000);
-    const otpCreated = await otp.create({
-      email,
-      otp: oneTimePassword,
-      expiresIn,
-    });
+    // const otpToSend = Math.floor(100000 + Math.random() * 900000).toString();
+    // await sendOtpMail(email, otpToSend);
+    // const oneTimePassword = await argon2.hash(otpToSend);
+    // const expiresIn = new Date(Date.now() + 5 * 60 * 1000);
+    const otpCreated = generateAndSendOtp(email);
+    //  await otp.create({
+    //   email,
+    //   otp: oneTimePassword,
+    //   expiresIn,
+    // });
     if (userCreated && !otpCreated) {
       await user.findOneAndDelete({ email });
       return response(
@@ -48,13 +83,7 @@ export const signUp = async (req, res) => {
         "Otp generation failed . rolled back user",
       );
     }
-    return response(
-      res,
-      true,
-      201,
-      userCreated,
-      "User created successfully but unverified",
-    );
+    return response(res, true, 201, userCreated, "Otp sent successfully");
   } catch (error) {
     await user.findOneAndDelete({ email });
     console.log("Error occured in singup controller : ", error);
@@ -80,7 +109,7 @@ export const verifyOtp = async (req, res) => {
     //checking if otp is expired
     const isOtpexpired = new Date() >= existingUser.expiresIn;
     if (isOtpexpired) {
-      return response(res, false, 400, null, "Otp has been expired");
+      return response(res, false, 400, null, "Incorrect or expired otp");
     }
     //checking if otp is correct
 
@@ -88,7 +117,7 @@ export const verifyOtp = async (req, res) => {
     if (!isOtpCorrect) {
       return response(res, false, 400, null, "Incorrect or expired otp");
     }
-    const verifyUser = await user.findOne({ email });
+    const verifyUser = await user.findOne({ email }).select("-password");
     verifyUser.isVerified = true;
     await verifyUser.save();
     await otp.findOneAndDelete({ email });
