@@ -10,7 +10,14 @@ export const generateSuperAdmin = async (req, res) => {
     const lastName = process.env.SUPERADMIN_LASTNAME;
     const role = ROLES.SUPERADMIN;
 
-    const addAdmin = { email, password, firstName, lastName, role };
+    const addAdmin = {
+      email,
+      password,
+      firstName,
+      lastName,
+      role,
+      isVerified: true,
+    };
 
     const admin = await user.findOne({ email });
     if (!admin) {

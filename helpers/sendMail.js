@@ -1,15 +1,13 @@
 import nodemailer from "nodemailer";
-console.log(process.env.EMAIL);
-console.log(process.env.EMAIL_APP_PASSWORD);
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.EMAIL,
+    pass: process.env.EMAIL_APP_PASSWORD,
+  },
+});
 
 export const sendOtpMail = async (email, otp) => {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.EMAIL,
-      pass: process.env.EMAIL_APP_PASSWORD,
-    },
-  });
   await transporter.sendMail({
     from: process.env.EMAIL,
     to: email,
@@ -24,6 +22,6 @@ export const sendOtpMail = async (email, otp) => {
       <p>This OTP expires in 5 minutes.</p>
     `,
   });
-  console.log("mail snet to" , email);
+  console.log("Email sent to : " , email);
   
 };

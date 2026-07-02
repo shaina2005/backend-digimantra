@@ -56,6 +56,7 @@ export const signUp = async (req, res) => {
       "User created successfully but unverified",
     );
   } catch (error) {
+    await user.findOneAndDelete({ email });
     console.log("Error occured in singup controller : ", error);
     return response(
       res,

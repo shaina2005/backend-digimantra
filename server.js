@@ -1,4 +1,4 @@
-import dotenv from "dotenv";
+import "./config/env.js";
 import express from "express";
 import userRoutes from "./routes/user.routes.js";
 import authRoutes from "./routes/auth.routes.js";
@@ -9,7 +9,6 @@ import { connectDatabase } from "./database/database.js";
 import { generateSuperAdmin } from "./helpers/superAdmin.js";
 import cartRoutes from "./routes/cart.routes.js";
 import { errorBoundry } from "./middleware/error.middleware.js";
-dotenv.config();
 console.log(Object.keys(process.env).filter(key => key.includes("EMAIL")));
 const PORT = process.env.PORT;
 

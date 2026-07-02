@@ -37,3 +37,14 @@ export const loginSchema = Joi.object({
     "string.empty": "password can't be empty",
   }),
 });
+
+export const verifyOtpSchema = Joi.object({
+  email: Joi.string().email().required().messages({
+    "string.email": "Please enter a valid email",
+  }),
+  otp: Joi.string().length(6).required().messages({
+    "string.pattern.base": "OTP must be exactly 6 digits",
+    "string.empty": "OTP is required",
+    "any.required": "OTP is required",
+  }),
+});
