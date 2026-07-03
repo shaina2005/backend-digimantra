@@ -39,7 +39,7 @@ export const signUp = async (req, res) => {
           "Failed creating account.Please try again.",
         );
       }
-      const otpCreated = generateAndSendOtp(email);
+      const otpCreated = await generateAndSendOtp(email);
       if (!otpCreated) {
         await user.findOneAndDelete({ email });
         return response(
@@ -63,16 +63,8 @@ export const signUp = async (req, res) => {
     if (!userCreated) {
       return response(res, false, 500, null, "failed creating user");
     }
-    // const otpToSend = Math.floor(100000 + Math.random() * 900000).toString();
-    // await sendOtpMail(email, otpToSend);
-    // const oneTimePassword = await argon2.hash(otpToSend);
-    // const expiresIn = new Date(Date.now() + 5 * 60 * 1000);
-    const otpCreated = generateAndSendOtp(email);
-    //  await otp.create({
-    //   email,
-    //   otp: oneTimePassword,
-    //   expiresIn,
-    // });
+    const otpCreated = await generateAndSendOtp(email);
+
     if (userCreated && !otpCreated) {
       await user.findOneAndDelete({ email });
       return response(
@@ -85,7 +77,7 @@ export const signUp = async (req, res) => {
     }
     return response(res, true, 201, userCreated, "Otp sent successfully");
   } catch (error) {
-    await user.findOneAndDelete({ email });
+    await user.findOneAndDelete({ req.body.email });
     console.log("Error occured in singup controller : ", error);
     return response(
       res,
