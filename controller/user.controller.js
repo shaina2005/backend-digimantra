@@ -27,7 +27,7 @@ export const myProfile = async (req, res) => {
     if (!userExists) {
       return response(res, false, 404, null, "User not found");
     }
-    return response(res, true, 200, { userExists }, "User found");
+    return response(res, true, 200, {user : userExists }, "User found");
   } catch (error) {
     console.log("Error at Myproile controller : ", error);
     return response(

@@ -29,10 +29,11 @@ router.post(
 router.put(
   "/:id",
   allowedAccess("superadmin"),
+  upload.array('image' , 5),
   schemaValidator(addProductSchema),
   editProduct,
 );
-router.patch("/update/stock/:id" , allowedAccess("superadmin"), updateStock )
-router.patch("/update/:id" , allowedAccess("superadmin"), updateProductById);
+router.patch("/update/stock/:id" , allowedAccess("superadmin"),   updateStock )
+router.patch("/update/:id" , allowedAccess("superadmin"), upload.array('image' , 5),  updateProductById);
 router.delete("/delete/:id", allowedAccess("superadmin"), deleteProductById);
 export default router;

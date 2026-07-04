@@ -77,7 +77,7 @@ export const signUp = async (req, res) => {
     }
     return response(res, true, 201, userCreated, "Otp sent successfully");
   } catch (error) {
-    await user.findOneAndDelete({ req.body.email });
+    await user.findOneAndDelete({ email: req.body.email });
     console.log("Error occured in singup controller : ", error);
     return response(
       res,

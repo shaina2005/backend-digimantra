@@ -19,10 +19,19 @@ const productSchema = new mongoose.Schema(
       type: String,
       required: [true, "Description must be provided"],
     },
-    image: {
-      type: [String],
-      required: [true, "Product Image is required"],
-    },
+    image:[
+      {
+        url:{
+          type : String,
+          required : [true , "Image is required"] 
+        },
+        public_id:{
+          type : String,
+          required : [true , "Image is required"] 
+        }
+      }
+    ]
+    ,
     stock:{
       type : Number,
       required :[true , "Stock is required"]
