@@ -7,11 +7,14 @@ import user from "../model/user.model.js";
 import otp from "../model/otp.model.js";
 import { sendOtpMail } from "../helpers/sendMail.js";
 import { generateAndSendOtp } from "../helpers/generateAndSendOtp.js";
+import mongoose from "mongoose";
 
 export const signUp = async (req, res) => {
+  const session = await mongoose.startSession();
   try {
+    await session.startTransaction();
     const { email, firstName, lastName, password } = req.body;
-    const isUserExists = await user.findOne({ email }).select("-password");
+    const isUserExists = await user.findOne({ email }).select("-password").session(session);
     if (isUserExists && isUserExists?.isVerified) {
       return response(res, false, 409, null, "User already exists");
     }
@@ -29,8 +32,10 @@ export const signUp = async (req, res) => {
     if (isUserExists && !isUserExists.isVerified) {
       const updateUnverifiedUser = await user
         .findOneAndUpdate({ email }, { $set: newUser }, { new: true })
-        .select("-password");
+        .select("-password")
+        .session(session);
       if (!updateUnverifiedUser) {
+        await session.abortTransaction();
         return response(
           res,
           false,
@@ -39,9 +44,9 @@ export const signUp = async (req, res) => {
           "Failed creating account.Please try again.",
         );
       }
-      const otpCreated = await generateAndSendOtp(email);
+      const otpCreated = await generateAndSendOtp(email , session);
       if (!otpCreated) {
-        await user.findOneAndDelete({ email });
+        await session.abortTransaction();
         return response(
           res,
           false,
@@ -50,6 +55,7 @@ export const signUp = async (req, res) => {
           "Failed creating account.Please try again.",
         );
       }
+      await session.commitTransaction();
       return response(
         res,
         true,
@@ -58,15 +64,16 @@ export const signUp = async (req, res) => {
         "Otp sent successfully",
       );
     }
-    const userCreated = await user.create(newUser);
-    delete userCreated.password
+    const [userCreated] = await user.create([newUser] , { session });
+    // delete userCreated.password
     if (!userCreated) {
+      await session.abortTransaction();
       return response(res, false, 500, null, "failed creating user");
     }
-    const otpCreated = await generateAndSendOtp(email);
+    const otpCreated = await generateAndSendOtp(email , session);
 
     if (userCreated && !otpCreated) {
-      await user.findOneAndDelete({ email });
+      await session.abortTransaction();
       return response(
         res,
         false,
@@ -75,9 +82,10 @@ export const signUp = async (req, res) => {
         "Otp generation failed . rolled back user",
       );
     }
+    await session.commitTransaction();
     return response(res, true, 201, userCreated, "Otp sent successfully");
   } catch (error) {
-    await user.findOneAndDelete({ email: req.body.email });
+    await session.abortTransaction();
     console.log("Error occured in singup controller : ", error);
     return response(
       res,
@@ -86,6 +94,8 @@ export const signUp = async (req, res) => {
       null,
       error?.message ?? error?.msg ?? "Server Error. Please try again later",
     );
+  }finally {
+    session.endSession();
   }
 };
 
