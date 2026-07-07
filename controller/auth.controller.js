@@ -1,3 +1,4 @@
+import { emailQueue } from "../queue/email.queue.js";
 import { ROLES } from "../enum/enum.js";
 import { response } from "../helpers/response.js";
 // import bcrypt from "bcrypt";
@@ -5,16 +6,17 @@ import argon2 from "argon2";
 import jwt from "jsonwebtoken";
 import user from "../model/user.model.js";
 import otp from "../model/otp.model.js";
-import { sendOtpMail } from "../helpers/sendMail.js";
-import { generateAndSendOtp } from "../helpers/generateAndSendOtp.js";
+import { createOtp } from "../helpers/createOtp.js";
 import mongoose from "mongoose";
 
 export const signUp = async (req, res) => {
   const session = await mongoose.startSession();
   try {
-    await session.startTransaction();
     const { email, firstName, lastName, password } = req.body;
-    const isUserExists = await user.findOne({ email }).select("-password").session(session);
+    const isUserExists = await user
+      .findOne({ email })
+      .select("-password")
+      .session(session);
     if (isUserExists && isUserExists?.isVerified) {
       return response(res, false, 409, null, "User already exists");
     }
@@ -28,6 +30,7 @@ export const signUp = async (req, res) => {
       // password,
       role: ROLES.USER,
     };
+    session.startTransaction();
 
     if (isUserExists && !isUserExists.isVerified) {
       const updateUnverifiedUser = await user
@@ -35,27 +38,28 @@ export const signUp = async (req, res) => {
         .select("-password")
         .session(session);
       if (!updateUnverifiedUser) {
-        await session.abortTransaction();
-        return response(
-          res,
-          false,
-          500,
-          null,
-          "Failed creating account.Please try again.",
-        );
+        throw new Error("Failed Signing up.");
       }
-      const otpCreated = await generateAndSendOtp(email , session);
-      if (!otpCreated) {
-        await session.abortTransaction();
-        return response(
-          res,
-          false,
-          500,
-          null,
-          "Failed creating account.Please try again.",
-        );
-      }
+      const otpToSend = await createOtp(email, session);
       await session.commitTransaction();
+      const job = await emailQueue.add(
+        "send-otp",
+        {
+          email,
+          otp: otpToSend,
+        },
+        {
+          attempts: 3,
+          backoff: {
+            type: "exponential",
+            delay: 2000,
+          },
+          removeOnComplete: true,
+          jobId: `otp-${email}`,
+        },
+      );
+      console.log("jopbid", job.id);
+
       return response(
         res,
         true,
@@ -64,28 +68,43 @@ export const signUp = async (req, res) => {
         "Otp sent successfully",
       );
     }
-    const [userCreated] = await user.create([newUser] , { session });
-    // delete userCreated.password
-    if (!userCreated) {
-      await session.abortTransaction();
-      return response(res, false, 500, null, "failed creating user");
+    const [userCreated] = await user.create([newUser], { session });
+    const userResponse = userCreated.toObject();
+    delete userResponse.password;
+    if (!userResponse) {
+      throw new Error("Error signing up!.");
     }
-    const otpCreated = await generateAndSendOtp(email , session);
-
-    if (userCreated && !otpCreated) {
-      await session.abortTransaction();
-      return response(
-        res,
-        false,
-        500,
-        null,
-        "Otp generation failed . rolled back user",
-      );
-    }
+    const otpToSend = await createOtp(email, session);
     await session.commitTransaction();
-    return response(res, true, 201, userCreated, "Otp sent successfully");
+    const job = await emailQueue.add(
+      "send-otp",
+      {
+        email,
+        otp: otpToSend,
+      },
+      {
+        attempts: 3,
+        backoff: {
+          type: "exponential",
+          delay: 2000,
+        },
+        removeOnComplete: true,
+        jobId: `otp-${email}`,
+      },
+    );
+    console.log("jopbid new", job.id);
+
+    return response(
+      res,
+      true,
+      201,
+      { user: userResponse },
+      "Otp sent successfully",
+    );
   } catch (error) {
-    await session.abortTransaction();
+    if (session.inTransaction()) {
+      await session.abortTransaction();
+    }
     console.log("Error occured in singup controller : ", error);
     return response(
       res,
@@ -94,7 +113,7 @@ export const signUp = async (req, res) => {
       null,
       error?.message ?? error?.msg ?? "Server Error. Please try again later",
     );
-  }finally {
+  } finally {
     session.endSession();
   }
 };
@@ -106,10 +125,10 @@ export const verifyOtp = async (req, res) => {
     const existingUser = await otp.findOne({ email });
 
     if (!existingUser) {
-      return response(res, false, 404, null, "Email not found , signup first");
+      return response(res, false, 404, null, "Incorrect or expired otp");
     }
     //checking if otp is expired
-    const isOtpexpired = new Date() >= existingUser.expiresIn;
+    const isOtpexpired = new Date() >= existingUser.expiresAt;
     if (isOtpexpired) {
       return response(res, false, 400, null, "Incorrect or expired otp");
     }

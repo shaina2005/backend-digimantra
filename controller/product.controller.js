@@ -165,7 +165,7 @@ export const editProduct = async (req, res) => {
         "Maximum 5 images can be uploaded",
       );
     }
-    await session.startTransaction();
+     session.startTransaction();
     const productInDB = await product.findById(id).session(session);
 
     if (!productInDB) {
@@ -224,7 +224,7 @@ export const editProduct = async (req, res) => {
 export const updateStock = async (req, res) => {
   const session = await mongoose.startSession();
   try {
-    await session.startTransaction();
+     session.startTransaction();
     const { id } = req.params;
     const { quantity } = req.body;
     if (!id) {
@@ -290,7 +290,7 @@ export const updateProductById = async (req, res) => {
         "Maximum 5 images can be uploaded",
       );
     }
-    await session.startTransaction();
+     session.startTransaction();
     const productInDB = await product.findById(id).session(session);
     if (!productInDB) {
       return response(res, false, 404, null, "Product not found");
@@ -355,7 +355,7 @@ export const updateProductById = async (req, res) => {
 export const deleteProductById = async (req, res) => {
   const session = await mongoose.startSession();
   try {
-     await session.startTransaction();
+      session.startTransaction();
     const { id } = req.params;
     if (!id) {
       return response(res, false, 409, null, "Product Not found");
