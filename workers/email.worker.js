@@ -1,3 +1,4 @@
+import "../config/env.js";
 import { sendOtpMail } from "../helpers/sendMail.js";
 import { Worker } from "bullmq";
 import { redisconnection } from "../config/redis.js";
