@@ -42,22 +42,24 @@ export const signUp = async (req, res) => {
       }
       const otpToSend = await createOtp(email, session);
       await session.commitTransaction();
-      const job = await emailQueue.add(
-        "send-otp",
-        {
-          email,
-          otp: otpToSend,
-        },
-        {
-          attempts: 3,
-          backoff: {
-            type: "exponential",
-            delay: 2000,
+      for(let i=1; i<=4 ; i++){
+        const job = await emailQueue.add(
+          "send-otp",
+          {
+            email,
+            otp: otpToSend,
           },
-          removeOnComplete: true,
-          jobId: `otp-${email}`,
-        },
-      );
+          {
+            attempts: 3,
+            backoff: {
+              type: "exponential",
+              delay: 2000,
+            },
+            removeOnComplete: true,
+            jobId: `otp-${email}-${Date.now()}`,
+          },
+        );
+      }
       console.log("jopbid", job.id);
 
       return response(
@@ -76,23 +78,24 @@ export const signUp = async (req, res) => {
     }
     const otpToSend = await createOtp(email, session);
     await session.commitTransaction();
-    const job = await emailQueue.add(
-      "send-otp",
-      {
-        email,
-        otp: otpToSend,
-      },
-      {
-        attempts: 3,
-        backoff: {
-          type: "exponential",
-          delay: 2000,
-        },
-        removeOnComplete: true,
-        jobId: `otp-${email}`,
-      },
-    );
-    console.log("jopbid new", job.id);
+    for(let i=1; i<=4 ; i++){
+        const job = await emailQueue.add(
+          "send-otp",
+          {
+            email,
+            otp: otpToSend,
+          },
+          {
+            attempts: 3,
+            backoff: {
+              type: "exponential",
+              delay: 2000,
+            },
+            removeOnComplete: true,
+            jobId: `otp-${email}-${Date.now()}`,
+          },
+        );
+      }
 
     return response(
       res,

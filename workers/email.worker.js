@@ -14,7 +14,6 @@ const emailWorker = new Worker(
 
         const { email, otp } = job.data;
 
-
         // Here you will call your email function
         await sendOtpMail(email, otp);
 

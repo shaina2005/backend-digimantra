@@ -9,7 +9,7 @@ import { connectDatabase } from "./database/database.js";
 import { generateSuperAdmin } from "./helpers/superAdmin.js";
 import cartRoutes from "./routes/cart.routes.js";
 import { errorBoundry } from "./middleware/error.middleware.js";
-console.log(Object.keys(process.env).filter(key => key.includes("EMAIL")));
+import  { serverAdapter } from "./config/bullBoard.js";
 const PORT = process.env.PORT;
 
 const app = express();
@@ -24,7 +24,7 @@ app.use((req, res, next) => {
   console.log(`[${time}] ${req.method} ${req.originalUrl}`);
   next();
 });
-
+app.use("/admin/queues", serverAdapter.getRouter());
 app.use("/auth", authRoutes);
 app.use("/user", auth, userRoutes);
 app.use("/product", auth, productRoutes);
