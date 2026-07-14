@@ -5,7 +5,147 @@ import deleteImageFromCloudinary from "../helpers/cloudinary/deleteImageFromClou
 import mongoose from "mongoose";
 export const getAllproducts = async (_, res) => {
   try {
-    const products = await product.find();
+    // const products = await product.find();
+    const products = await product.aggregate([
+      {
+        $match:{
+          stock : {$gt : 50}
+        }
+      },
+      {$facet : {
+        products : [
+          {$skip : 0},
+          {$limit :2}
+        ],
+        total : [
+          {$count : "counting"}
+        ]
+      }}
+
+  //      {$facet: {
+  //     cheapProducts: [
+  //       {
+  //         $match: {
+  //           price: { $lt: 10000 }
+  //         }
+  //       }
+  //     ],
+
+  //     cheapCount: [
+  //       {
+  //         $match: {
+  //           price: { $lt: 10000 }
+  //         }
+  //       },
+  //       {
+  //         $count: "count"
+  //       }
+  //     ],
+
+  //     expensiveProducts: [
+  //       {
+  //         $match: {
+  //           price: { $gt: 50000 }
+  //         }
+  //       }
+  //     ],
+
+  //     expensiveCount: [
+  //       {
+  //         $match: {
+  //           price: { $gt: 50000 }
+  //         }
+  //       },
+  //       {
+  //         $count: "count"
+  //       }
+  //     ]
+  //   }
+  // }
+
+
+      // {$match:{
+      //   stock : {$gte : 10}
+      // }},
+      // {
+      //   $addFields:{
+      //     tomtal : {
+      //       $multiply : ["$price" , 10]
+      //     }
+      //   }
+      // }
+      // {$count : "totalprod"}
+      // {
+      //   $lookup :{
+      //     from : "users",
+      //     localField : "addedBy",
+      //     foreignField : "_id",
+      //     as : "productAddedBy"
+      //   }      
+      // },
+      // {
+      //   $unwind : "$productAddedBy"
+      // },
+      // {
+      //   $set : {
+      //     adminEmail : "$productAddedBy.email"
+      //   }
+      // },
+      // {
+      //   $unset : "productAddedBy"
+      // }
+      // {
+      //   $match :{
+      //     "productAddedBy.email"  : "superadmin@gmail.com"
+      //   }
+      // },
+      // {
+      //   $project:{
+      //     name : 1,
+      //     price : 1,
+      //     meow : {
+      //       $divide : ["$price" , "$stock"]
+      //     }
+      //   }
+      // }
+
+      // {
+      //   $sort :{
+      //     price : 1
+      //   }
+      // },
+      // {
+      //   $limit : 2
+      // }
+      // {
+      //   $match: {
+      //   stock : 10
+      //     // $or: [{ stock: { $gt: 10 } }, { price: { $gte: 10000 } }],
+      //   },
+      // },
+      // {
+      //   $project : {
+      //     _id:0,
+      //     prodName : "$name",
+      //     price: 1,
+      //     image:1,
+      //     meow : {
+      //       $multiply : ["$stock" , "$price"]
+      //     }
+      //   }
+      // },
+      // {
+      //   $group:{
+      //     _id : "$image",
+      //     total : {
+      //       $sum : 5
+      //     }
+      //   }
+      // }
+      
+      ]);
+    // console.log("products", product);
+
     if (!products || products.length === 0) {
       return response(res, true, 200, [], "No products Found");
     }
@@ -48,7 +188,7 @@ export const addNewProduct = async (req, res) => {
         "Maximum 5 images can be uploaded",
       );
     }
-     uploadedImages = await Promise.all(
+    uploadedImages = await Promise.all(
       req.files.map((file) => uploadBufferToCloudinary(file.buffer)),
     );
     const prefix = incomingProduct.name
@@ -57,19 +197,24 @@ export const addNewProduct = async (req, res) => {
       .toUpperCase();
     const randomNo = Math.floor(100000 + Math.random() * 900000);
     const productCode = `${prefix}-${randomNo}`;
-    const [newProduct] = await product.create([{
-      productCode,
-      ...incomingProduct,
-      image : uploadedImages,
-      addedBy: req.user.userId,
-    }] , {session});
+    const [newProduct] = await product.create(
+      [
+        {
+          productCode,
+          ...incomingProduct,
+          image: uploadedImages,
+          addedBy: req.user.userId,
+        },
+      ],
+      { session },
+    );
 
     await session.commitTransaction();
     return response(res, true, 201, newProduct, "Product Added successfully");
   } catch (error) {
     console.log("Error occured in AddnewProduct controller : ", error);
     await session.abortTransaction();
-    if(uploadedImages.length > 0){
+    if (uploadedImages.length > 0) {
       await Promise.all(
         uploadedImages.map((img) => deleteImageFromCloudinary(img.public_id)),
       );
@@ -81,7 +226,7 @@ export const addNewProduct = async (req, res) => {
       null,
       "Server Error. Please try again later",
     );
-  }finally {
+  } finally {
     session.endSession();
   }
 };
@@ -165,13 +310,13 @@ export const editProduct = async (req, res) => {
         "Maximum 5 images can be uploaded",
       );
     }
-     session.startTransaction();
+    session.startTransaction();
     const productInDB = await product.findById(id).session(session);
 
     if (!productInDB) {
       return response(res, false, 404, null, "Product not found");
     }
-   
+
     const image = await Promise.all(
       req.files.map((img) => uploadBufferToCloudinary(img.buffer)),
     );
@@ -187,11 +332,11 @@ export const editProduct = async (req, res) => {
       {
         new: true,
         runValidators: true,
-        session
+        session,
       },
     );
     await session.commitTransaction();
-     await Promise.all(
+    await Promise.all(
       productInDB.image.map((img) => deleteImageFromCloudinary(img.public_id)),
     );
     return response(
@@ -203,7 +348,7 @@ export const editProduct = async (req, res) => {
     );
   } catch (error) {
     await session.abortTransaction();
-    if(uploadedImage.length > 0){
+    if (uploadedImage.length > 0) {
       await Promise.all(
         uploadedImage.map((img) => deleteImageFromCloudinary(img.public_id)),
       );
@@ -216,7 +361,7 @@ export const editProduct = async (req, res) => {
       null,
       "Server Error. Please try again later",
     );
-  }finally {
+  } finally {
     session.endSession();
   }
 };
@@ -224,7 +369,7 @@ export const editProduct = async (req, res) => {
 export const updateStock = async (req, res) => {
   const session = await mongoose.startSession();
   try {
-     session.startTransaction();
+    session.startTransaction();
     const { id } = req.params;
     const { quantity } = req.body;
     if (!id) {
@@ -247,7 +392,7 @@ export const updateStock = async (req, res) => {
           stock: Number(quantity),
         },
       },
-      { new: true , session },
+      { new: true, session },
     );
     if (!updateStock) {
       return response(res, false, 400, null, "Failed adding new stock");
@@ -275,7 +420,7 @@ export const updateStock = async (req, res) => {
 
 export const updateProductById = async (req, res) => {
   const session = await mongoose.startSession();
-  let uploadedImage =[]
+  let uploadedImage = [];
   try {
     const { id } = req.params;
     if (!id) {
@@ -290,7 +435,7 @@ export const updateProductById = async (req, res) => {
         "Maximum 5 images can be uploaded",
       );
     }
-     session.startTransaction();
+    session.startTransaction();
     const productInDB = await product.findById(id).session(session);
     if (!productInDB) {
       return response(res, false, 404, null, "Product not found");
@@ -334,7 +479,7 @@ export const updateProductById = async (req, res) => {
     );
   } catch (error) {
     await session.abortTransaction();
-    if(uploadedImage.length > 0){
+    if (uploadedImage.length > 0) {
       await Promise.all(
         uploadedImage.map((img) => deleteImageFromCloudinary(img.public_id)),
       );
@@ -347,7 +492,7 @@ export const updateProductById = async (req, res) => {
       null,
       "Server Error. Please try again later",
     );
-  }finally {
+  } finally {
     session.endSession();
   }
 };
@@ -355,7 +500,7 @@ export const updateProductById = async (req, res) => {
 export const deleteProductById = async (req, res) => {
   const session = await mongoose.startSession();
   try {
-      session.startTransaction();
+    session.startTransaction();
     const { id } = req.params;
     if (!id) {
       return response(res, false, 409, null, "Product Not found");
@@ -364,14 +509,14 @@ export const deleteProductById = async (req, res) => {
     if (!productToDelete) {
       return response(res, false, 409, null, "Product Not found");
     }
-    
-    const productDeleted = await product.findByIdAndDelete(id , {session});
+
+    const productDeleted = await product.findByIdAndDelete(id, { session });
     if (!productDeleted) {
       return response(res, false, 409, null, "Product Not found");
     }
     await session.commitTransaction();
     // Delete associated images from Cloudinary
-     await Promise.all(
+    await Promise.all(
       productToDelete.image.map((img) =>
         deleteImageFromCloudinary(img.public_id),
       ),
